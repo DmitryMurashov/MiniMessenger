@@ -4,9 +4,10 @@ from authapp.serializers import UserSerializer
 
 
 class ChatSerializer(serializers.ModelSerializer):
-    owner_id = serializers.IntegerField(write_only=True)
     owner = UserSerializer(read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
+
+    owner_id = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:
         model = Chat
@@ -26,9 +27,12 @@ class ChatMemberSerializer(serializers.ModelSerializer):
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-    chat = ChatSerializer()
+    author = ChatMemberSerializer(read_only=True)
+    chat = ChatSerializer(read_only=True)
     sent_at = serializers.DateTimeField(read_only=True)
+
+    author_id = serializers.IntegerField(write_only=True, required=False)
+    chat_id = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:
         model = Message

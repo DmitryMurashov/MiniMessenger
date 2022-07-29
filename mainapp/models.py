@@ -1,6 +1,5 @@
 from django.db import models
 from authapp.models import User
-from typing import Union
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 
@@ -12,11 +11,8 @@ class Chat(models.Model):
     image = models.ImageField(default="https://sun1-47.userapi.com/s/v1/if1/f-xqnN-x7i5-U-Kq3VRTt2h7m6dJT6K-XVVq0py6Yg9WOB2fhACUc3U3gOLbsbodwfzSwHbi.jpg?size=400x0&quality=96&crop=5,0,236,236&ava=1")
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def get_member(self, user: User) -> Union[User, None]:
-        try:
-            return ChatMember.objects.get(user=user, chat=self)
-        except ChatMember.DoesNotExist:
-            return
+    def fetch_member(self, user: User) -> 'ChatMember':
+        return ChatMember.objects.get(user=user, chat=self)
 
 
 class ChatMember(models.Model):
@@ -32,7 +28,15 @@ class ChatMember(models.Model):
 
 
 class Message(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='all_messages')
+    author = models.ForeignKey(ChatMember, on_delete=models.CASCADE, related_name='messages')
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages')
     content = models.TextField(max_length=2000)
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+
+class ChatInvite(models.Model):
+    sender = models.ForeignKey(ChatMember, on_delete=models.CASCADE, related_name='sent_invites')
+    target = models.ForeignKey(User, on_delete=models.CASCADE, related_name="incoming_invites")
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name="invites")
+    content = models.TextField(max_length=200)
     sent_at = models.DateTimeField(auto_now_add=True)
