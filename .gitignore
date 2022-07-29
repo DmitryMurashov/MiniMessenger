@@ -1,0 +1,4 @@
+debug
+venv
+db.sqlite3
+.idea
