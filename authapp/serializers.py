@@ -9,10 +9,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         min_length=8,
         write_only=True
     )
+    token = serializers.CharField(max_length=250, read_only=True)
 
     class Meta:
         model = User
-        fields = ['email', 'username', 'password']
+        fields = ['email', 'username', 'password', 'token']
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
@@ -22,6 +23,9 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         exclude = ("password", "last_login", "email")
+
+    def create(self, validated_data):
+        return User.objects.create_user(**validated_data)
 
 
 class LoginSerivalizer(serializers.Serializer):

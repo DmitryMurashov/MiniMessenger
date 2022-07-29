@@ -4,8 +4,8 @@ from authapp.serializers import UserSerializer
 
 
 class ChatSerializer(serializers.ModelSerializer):
-    owner = UserSerializer(read_only=True)
     owner_id = serializers.IntegerField(write_only=True)
+    owner = UserSerializer(read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
 
     class Meta:

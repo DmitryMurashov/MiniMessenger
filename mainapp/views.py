@@ -3,11 +3,11 @@ from rest_framework.permissions import IsAuthenticated
 from mainapp.serializers import ChatMemberSerializer, ChatSerializer, MessageSerializer
 from mainapp.mixins import ChatMixin, MemberMixin
 from mainapp.models import Message
-
+from rest_framework.renderers import JSONRenderer
 from mainapp.permissions import IsMember
 
 
-class ChatListApiView(APIView):  # TODO: CRUD
+class ChatListApiView(APIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = ChatSerializer
 
@@ -18,28 +18,29 @@ class ChatListApiView(APIView):  # TODO: CRUD
 
     def post(self, request):
         data = request.data.get("chat", {})
+        data["owner_id"] = request.user.id
         serializer = self.serializer_class(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status.HTTP_201_CREATED)
 
 
-class ChatApiView(MemberMixin, APIView):  # TODO: CRUD
+class ChatApiView(MemberMixin, APIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = ChatSerializer
 
-    def get(self, request, chat_id):
+    def get(self, request, **kwargs):
         serializer = self.serializer_class(self.chat)
         return Response(serializer.data, status.HTTP_200_OK)
 
-    def update(self, request):
+    def update(self, request, **kwargs):
         data = request.data.get("chat", {})
         serializer = self.serializer_class(instance=self.chat, data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status.HTTP_200_OK)
 
-    def delete(self, request):
+    def delete(self, request, **kwargs):
         if self.chat.owner == request.user or (self.member and self.member.is_admin):
             self.chat.delete()
             return Response({}, status.HTTP_200_OK)

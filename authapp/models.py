@@ -38,6 +38,10 @@ class User(AbstractBaseUser):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
 
+    @property
+    def token(self):
+        return self.generate_jwt_token()
+
     def get_customer(self) -> 'Profile':
         customer, created = Profile.objects.get_or_create(defaults={'user': self})
         return customer
