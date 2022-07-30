@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from mainapp.models import Chat, ChatMember, Message
+from mainapp.models import Chat, ChatMember, Message, ChatInvite
 from authapp.serializers import UserSerializer
 
 
@@ -16,8 +16,9 @@ class ChatSerializer(serializers.ModelSerializer):
 
 
 class ChatMemberSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-    chat = ChatSerializer()
+    user = UserSerializer(read_only=True)
+    chat = ChatSerializer(read_only=True)
+
     member_since = serializers.DateTimeField(read_only=True)
 
     class Meta:
@@ -36,5 +37,21 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
+        fields = "__all__"
+        depth = 2
+
+
+class ChatInviteSerializer(serializers.ModelSerializer):
+    sender = ChatMemberSerializer(read_only=True)
+    target = UserSerializer(read_only=True)
+    chat = ChatSerializer(read_only=True)
+    sent_at = serializers.DateTimeField(read_only=True)
+
+    sender_id = serializers.IntegerField(write_only=True)
+    target_id = serializers.IntegerField(write_only=True)
+    chat_id = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = ChatInvite
         fields = "__all__"
         depth = 2

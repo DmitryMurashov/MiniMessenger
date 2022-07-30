@@ -14,10 +14,14 @@ class Chat(models.Model):
     def fetch_member(self, user: User) -> 'ChatMember':
         return ChatMember.objects.get(user=user, chat=self)
 
+    def is_member(self, user: User) -> bool:
+        return ChatMember.objects.filter(user=user, chat=self).exists()
+
 
 class ChatMember(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chats')
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='members')
+    chat_custom_name = models.CharField(max_length=100, blank=True, null=True)
     member_since = models.DateTimeField(auto_now_add=True)
     is_admin = models.BooleanField(default=False)
 
@@ -25,6 +29,13 @@ class ChatMember(models.Model):
     def create_user_profile(sender, instance, created, **kwargs):
         if created:
             ChatMember.objects.create(user=instance.owner, chat=instance, is_admin=True)
+
+    @receiver(post_save, sender='mainapp.ChatInvite')
+    def on_invite_accepted(sender, instance: 'ChatInvite', created, **kwargs):
+        if not created:
+            if instance.accepted:
+                ChatMember.objects.create(user=instance.target, chat=instance.chat)
+                instance.delete()
 
 
 class Message(models.Model):
@@ -40,3 +51,4 @@ class ChatInvite(models.Model):
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name="invites")
     content = models.TextField(max_length=200)
     sent_at = models.DateTimeField(auto_now_add=True)
+    accepted = models.BooleanField(default=False)
