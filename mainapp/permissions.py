@@ -1,5 +1,6 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 from rest_framework.request import Request
+from rest_framework.exceptions import NotFound
 from django.views import View
 from mainapp.models import Chat, Message
 from django.core.exceptions import ObjectDoesNotExist
@@ -59,3 +60,10 @@ class IsAdmin(BasePermission):
         return False
 
 
+class IsPrivateChat(BasePermission):
+    def has_permission(self, request: Request, view: View):
+        if chat_id := request.resolver_match.kwargs.get('chat_id'):
+            chat = Chat.objects.get(id=chat_id)
+            if not chat.is_private or chat.is_member(request.user):
+                return True
+        return False

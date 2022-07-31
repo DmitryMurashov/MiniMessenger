@@ -1,145 +1,105 @@
-from rest_framework.views import APIView, Response, status
+from rest_framework.views import APIView, status
 from rest_framework.permissions import IsAuthenticated
-from mainapp.serializers import ChatMemberSerializer, ChatSerializer, MessageSerializer, ChatInviteSerializer
-from mainapp.mixins import ChatMixin, ChatMemberMixin, MessageMixin, InviteMixin
-from mainapp.permissions import IsMember, CanManageMessage, DeleteIfChatOwner, IsAdmin, ReadOnly
+from mainapp.mixins import *
+from mainapp.permissions import *
+from mainapp.serializers import *
 from authapp.models import User
+from rest_framework.exceptions import APIException
+from rest_framework.generics import (
+    CreateAPIView,
+    UpdateAPIView,
+    ListAPIView,
+    RetrieveAPIView,
+    DestroyAPIView
+)
 
 
-class ChatListApiView(APIView):
+class ChatListApiView(CreateAPIView, ListAPIView, APIView):
     permission_classes = (IsAuthenticated,)
-    serializer_class = ChatSerializer
 
-    def get(self, request):
-        chats = [obj.chat for obj in request.user.chats.all()]
-        serializer = self.serializer_class(chats, many=True)
-        return Response(serializer.data, status.HTTP_200_OK)
+    def get_queryset(self):
+        return [obj.chat for obj in self.request.user.chats.all()]
 
-    def post(self, request):
-        data = request.data.get("chat", {})
-        data["owner_id"] = request.user.id
-        serializer = self.serializer_class(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status.HTTP_201_CREATED)
+    @property
+    def get_serializer(self):
+        if self.request.method == "POST":
+            self.request.data["owner_id"] = self.request.user.id
+            return CreateChatSerializer
+        return ChatSerializer
 
 
-class ChatApiView(ChatMemberMixin, APIView):
-    permission_classes = (IsAuthenticated, DeleteIfChatOwner)
-    serializer_class = ChatSerializer
+class ChatApiView(ChatMixin, UpdateAPIView, RetrieveAPIView, DestroyAPIView, APIView):
+    permission_classes = (IsAuthenticated, DeleteIfChatOwner, IsPrivateChat)
+    get_serializer = ChatSerializer
 
-    def get(self, request, **kwargs):
-        serializer = self.serializer_class(self.chat)
-        return Response(serializer.data, status.HTTP_200_OK)
-
-    def put(self, request, **kwargs):
-        data = request.data.get("chat", {})
-        serializer = self.serializer_class(instance=self.chat, data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status.HTTP_200_OK)
-
-    def delete(self, request, **kwargs):
-        self.chat.delete()
-        return Response({}, status.HTTP_200_OK)
+    def get_object(self):
+        return self.chat
 
 
-class ChatMessageListApiView(ChatMemberMixin, APIView):
+class ChatMessageListApiView(ChatRequestMemberMixin, CreateAPIView, ListAPIView, APIView):
     permission_classes = (IsAuthenticated, IsMember)
-    serializer_class = MessageSerializer
 
-    def get(self, request, **kwargs):
-        serializer = self.serializer_class(self.chat.messages.all(), many=True)
-        return Response(serializer.data, status.HTTP_200_OK)
+    def get_queryset(self):
+        return self.chat.messages.all()
 
-    def post(self, request, **kwargs):
-        data = request.data.get("message", {})
-        data["author_id"] = self.member.id  # TODO: ??
-        data["chat_id"] = self.chat.id
-        serializer = self.serializer_class(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status.HTTP_201_CREATED)
+    @property
+    def get_serializer(self):
+        if self.request.method == "POST":
+            self.request.data["author_id"] = self.request_member.id
+            self.request.data["chat_id"] = self.chat.id
+            return CreateMessageSerializer
+        return MessageSerializer
 
 
-class ChatMessageApiView(MessageMixin, APIView):
+class ChatMessageApiView(MessageMixin, UpdateAPIView, RetrieveAPIView, DestroyAPIView, APIView):
     permission_classes = (IsAuthenticated, IsMember, CanManageMessage | ReadOnly)
-    serializer_class = MessageSerializer
+    get_serializer = MessageSerializer
 
-    def get(self, request, **kwargs):
-        serializer = self.serializer_class(self.message)
-        return Response(serializer.data, status.HTTP_200_OK)
-
-    def put(self, request, **kwargs):
-        data = request.data.get("message", {})
-        serializer = self.serializer_class(instance=self.message, data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status.HTTP_200_OK)
-
-    def delete(self, request, **kwargs):
-        self.message.delete()
-        return Response({}, status.HTTP_200_OK)
+    def get_object(self):
+        return self.message
 
 
-class ChatMemberListApiView(ChatMixin, APIView):
+class ChatMemberListApiView(ChatMixin, ListAPIView, APIView):
     permission_classes = (IsAuthenticated, IsMember)
-    serializer_class = ChatMemberSerializer
+    get_serializer = ChatMemberSerializer
 
-    def get(self, request, **kwargs):
-        serializer = self.serializer_class(self.chat.members, many=True)
-        return Response(serializer.data, status.HTTP_200_OK)
+    def get_queryset(self):
+        return self.chat.members
 
 
-class ChatMemberApiView(ChatMemberMixin, APIView):
+class ChatMemberApiView(ChatMemberMixin, UpdateAPIView, RetrieveAPIView, DestroyAPIView, APIView):
     permission_classes = (IsAuthenticated, IsMember, IsAdmin | ReadOnly)
     serializer_class = ChatMemberSerializer
 
-    def get(self, request, **kwargs):
-        serializer = self.serializer_class(self.member)
-        return Response(serializer.data, status.HTTP_200_OK)
-
-    def put(self, request, **kwargs):
-        data = request.data.get("member")
-        serializer = self.serializer_class(instance=self.member, data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status.HTTP_200_OK)
-
-    def delete(self, request):
-        self.member.delete()
-        return Response({}, status.HTTP_200_OK)
+    def get_object(self):
+        return self.member
 
 
-class ChatInviteListApiView(ChatMemberMixin, APIView):
+class ChatInviteListApiView(ChatRequestMemberMixin, CreateAPIView, ListAPIView, APIView):
     permission_classes = (IsAuthenticated, IsMember, IsAdmin)
     serializer_class = ChatInviteSerializer
 
-    def get(self, request, **kwargs):
-        serializer = self.serializer_class(self.chat.invites.all(), many=True)
-        return Response(serializer.data, status.HTTP_200_OK)
+    def get_queryset(self):
+        return self.chat.invites.all()
 
-    def post(self, request, **kwargs):
-        data = request.data.get("invite")
-        data["sender_id"] = self.member.id
-        data["chat_id"] = self.chat.id
-        serializer = self.serializer_class(data=data)
-        serializer.is_valid()
+    @property
+    def get_serializer(self):
+        if self.request.method == "POST":
+            self.request.data["sender_id"] = self.request_member.id
+            self.request.data["chat_id"] = self.chat.id
+            return CreateChatInviteSerializer
+        return ChatInviteSerializer
+
+    def perform_create(self, serializer):
         user = User.objects.get(id=serializer.validated_data.get("target_id"))
         if self.chat.is_member(user):
-            return Response({"error": "Пользователь уже есть в чате"}, status=status.HTTP_400_BAD_REQUEST)
-        serializer.save()
-        return Response(serializer.data, status.HTTP_201_CREATED)
+            raise APIException("Пользователь уже есть в чате", status.HTTP_400_BAD_REQUEST)
+        super(ChatInviteListApiView, self).perform_create(serializer)
 
 
-class ChatInviteApiView(InviteMixin, APIView):
+class ChatInviteApiView(InviteMixin, UpdateAPIView, RetrieveAPIView, DestroyAPIView, APIView):
     permission_classes = (IsAuthenticated, IsMember, IsAdmin)
     serializer_class = ChatInviteSerializer
 
-    def get(self, request, **kwargs):
-        serializer = self.serializer_class(self.invite)
-        return Response(serializer.data, status.HTTP_200_OK)
-
-    def delete(self, request, **kwargs):
-        self.invite.delete()
-        return Response({}, status.HTTP_200_OK)
+    def get_object(self):
+        return self.invite

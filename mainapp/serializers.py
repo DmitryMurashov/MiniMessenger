@@ -4,10 +4,12 @@ from authapp.serializers import UserSerializer
 
 
 class ChatSerializer(serializers.ModelSerializer):
+    is_private = serializers.BooleanField(default=True, required=False)
+    name = serializers.CharField(max_length=50, required=False)
+    image = serializers.ImageField(required=False)
+
     owner = UserSerializer(read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
-
-    owner_id = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:
         model = Chat
@@ -15,10 +17,13 @@ class ChatSerializer(serializers.ModelSerializer):
         depth = 2
 
 
+class CreateChatSerializer(ChatSerializer):
+    owner_id = serializers.IntegerField(write_only=True, required=True)
+
+
 class ChatMemberSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     chat = ChatSerializer(read_only=True)
-
     member_since = serializers.DateTimeField(read_only=True)
 
     class Meta:
@@ -32,13 +37,15 @@ class MessageSerializer(serializers.ModelSerializer):
     chat = ChatSerializer(read_only=True)
     sent_at = serializers.DateTimeField(read_only=True)
 
-    author_id = serializers.IntegerField(write_only=True, required=False)
-    chat_id = serializers.IntegerField(write_only=True, required=False)
-
     class Meta:
         model = Message
         fields = "__all__"
         depth = 2
+
+
+class CreateMessageSerializer(MessageSerializer):
+    author_id = serializers.IntegerField(write_only=True, required=True)
+    chat_id = serializers.IntegerField(write_only=True, required=True)
 
 
 class ChatInviteSerializer(serializers.ModelSerializer):
@@ -47,11 +54,13 @@ class ChatInviteSerializer(serializers.ModelSerializer):
     chat = ChatSerializer(read_only=True)
     sent_at = serializers.DateTimeField(read_only=True)
 
-    sender_id = serializers.IntegerField(write_only=True)
-    target_id = serializers.IntegerField(write_only=True)
-    chat_id = serializers.IntegerField(write_only=True)
-
     class Meta:
         model = ChatInvite
         fields = "__all__"
         depth = 2
+
+
+class CreateChatInviteSerializer(ChatInviteSerializer):
+    sender_id = serializers.IntegerField(write_only=True, required=True)
+    target_id = serializers.IntegerField(write_only=True, required=True)
+    chat_id = serializers.IntegerField(write_only=True, required=True)

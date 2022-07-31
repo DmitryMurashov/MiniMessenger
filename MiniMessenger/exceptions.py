@@ -1,22 +1,29 @@
 from rest_framework.views import exception_handler
+from rest_framework.views import Response, status
+from utils.functions import get_traceback_text
+from rest_framework.exceptions import NotFound
+
+FAIL_TEXT_COLOR = '\033[91m'
 
 
-def core_exception_handler(exc, context):
-    response = exception_handler(exc, context)
+def __DoesNotExistsErrorHandler(_, context):
+    return exception_handler(NotFound("Object not found"), context)
+
+
+def core_exception_handler(exception, context):
+    if response := __handle_generic_error(exception, context):
+        return response
+    rest_response = exception_handler(exception, context)
+    if rest_response is not None:
+        return rest_response
+    print(FAIL_TEXT_COLOR + get_traceback_text(exception))
+    return Response({"error": "Unknown internal server error"}, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def __handle_generic_error(exception, context):
     handlers = {
-        'ValidationError': _handle_generic_error
+        'DoesNotExist': __DoesNotExistsErrorHandler,
     }
-    exception_class = exc.__class__.__name__
-
-    if exception_class in handlers:
-        return handlers[exception_class](exc, context, response)
-
-    return response
-
-
-def _handle_generic_error(exc, context, response):
-    response.data = {
-        'errors': response.data
-    }
-
-    return response
+    exception_class_name = exception.__class__.__name__
+    if exception_class_name in handlers:
+        return handlers[exception_class_name](exception, context)
