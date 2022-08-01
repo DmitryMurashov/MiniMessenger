@@ -16,8 +16,8 @@ class IsMember(BasePermission):
 
     def has_permission(self, request: Request, view: View) -> bool:
         if chat_id := request.resolver_match.kwargs.get('chat_id'):
-            chat = Chat.objects.get(id=chat_id)
             try:
+                chat = Chat.objects.get(id=chat_id)
                 chat.fetch_member(request.user)
                 return True
             except ObjectDoesNotExist:
@@ -30,9 +30,12 @@ class CanManageMessage(BasePermission):
 
     def has_permission(self, request: Request, view: View) -> bool:
         if (chat_id := request.resolver_match.kwargs.get('chat_id')) and (message_id := request.resolver_match.kwargs.get('message_id')):
-            chat = Chat.objects.get(id=chat_id)
-            message = Message.objects.get(id=message_id)
-            member = chat.fetch_member(request.user)
+            try:
+                chat = Chat.objects.get(id=chat_id)
+                message = Message.objects.get(id=message_id)
+                member = chat.fetch_member(request.user)
+            except ObjectDoesNotExist:
+                return False
             return message.author == member or member.is_admin
         return False
 
@@ -44,7 +47,10 @@ class DeleteIfChatOwner(BasePermission):
         if request.method != "DELETE":
             return True
         if chat_id := request.resolver_match.kwargs.get('chat_id'):
-            chat = Chat.objects.get(id=chat_id)
+            try:
+                chat = Chat.objects.get(id=chat_id)
+            except ObjectDoesNotExist:
+                return False
             return chat.owner == request.user
         return False
 
@@ -54,16 +60,24 @@ class IsAdmin(BasePermission):
 
     def has_permission(self, request: Request, view: View) -> bool:
         if chat_id := request.resolver_match.kwargs.get('chat_id'):
-            chat = Chat.objects.get(id=chat_id)
-            member = chat.fetch_member(request.user)
+            try:
+                chat = Chat.objects.get(id=chat_id)
+                member = chat.fetch_member(request.user)
+            except ObjectDoesNotExist:
+                return False
             return member.is_admin
         return False
 
 
 class IsPrivateChat(BasePermission):
+    message = "Для осуществления запроса пользователь должен быть участником чата"
+
     def has_permission(self, request: Request, view: View):
         if chat_id := request.resolver_match.kwargs.get('chat_id'):
-            chat = Chat.objects.get(id=chat_id)
+            try:
+                chat = Chat.objects.get(id=chat_id)
+            except ObjectDoesNotExist:
+                return False
             if not chat.is_private or chat.is_member(request.user):
                 return True
         return False
