@@ -12,13 +12,13 @@ class ChatMixin(ObjectMixin):
         self.chat = Chat.objects.get(id=kwargs.get("chat_id"))
 
 
-class MessageMixin(ObjectMixin):
+class MessageMixin(ChatMixin):
     def __init__(self):
         super(MessageMixin, self).__init__()
         self.message = None
 
     def get_mixin_object(self, request: Request, *args, **kwargs) -> None:
-        self.message = Message.objects.get(id=kwargs.get("message_id"))
+        self.message = Message.objects.get(id=kwargs.get("message_id"), chat=self.chat)
 
 
 class ChatMemberMixin(ChatMixin):
@@ -28,16 +28,16 @@ class ChatMemberMixin(ChatMixin):
 
     def get_mixin_object(self, request: Request, *args, **kwargs) -> None:
         super(ChatMemberMixin, self).get_mixin_object(request, *args, **kwargs)
-        self.member = ChatMember.objects.get(id=kwargs.get("member_id"))
+        self.member = ChatMember.objects.get(id=kwargs.get("member_id"), chat=self.chat)
 
 
-class InviteMixin(ObjectMixin):
+class InviteMixin(ChatMixin):
     def __init__(self):
         super(InviteMixin, self).__init__()
         self.invite = None
 
     def get_mixin_object(self, request: Request, *args, **kwargs) -> None:
-        self.invite = ChatInvite.objects.get(id=kwargs.get("invite_id"))
+        self.invite = ChatInvite.objects.get(id=kwargs.get("invite_id"), chat=self.chat)
 
 
 class ChatRequestMemberMixin(ChatMixin):

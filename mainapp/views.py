@@ -1,4 +1,6 @@
-from rest_framework.views import APIView, status
+import time
+
+from rest_framework.views import APIView, Response, status
 from rest_framework.permissions import IsAuthenticated
 from mainapp.mixins import *
 from mainapp.permissions import *
@@ -12,6 +14,7 @@ from rest_framework.generics import (
     RetrieveAPIView,
     DestroyAPIView
 )
+from django.http import StreamingHttpResponse
 
 
 class ChatListApiView(CreateAPIView, ListAPIView, APIView):

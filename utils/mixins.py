@@ -27,16 +27,17 @@ class ObjectMixin(APIView):
         self.headers = self.default_response_headers
 
         try:
-            self.get_mixin_object(request, *args, **kwargs)
-        except ObjectDoesNotExist:
-            response = Response({"detail": "Object not found"}, status.HTTP_404_NOT_FOUND)
-            return self.finalize_response(request, response, *args, **kwargs)
-
-        try:
             self.initial(request, *args, **kwargs)
 
+            try:
+                self.get_mixin_object(request, *args, **kwargs)
+            except ObjectDoesNotExist:
+                response = Response({"detail": "Object not found"}, status.HTTP_404_NOT_FOUND)
+                return self.finalize_response(request, response, *args, **kwargs)
+
             if request.method.lower() in self.http_method_names:
-                handler = getattr(self, request.method.lower(), self.http_method_not_allowed)
+                handler = getattr(self, request.method.lower(),
+                                  self.http_method_not_allowed)
             else:
                 handler = self.http_method_not_allowed
 

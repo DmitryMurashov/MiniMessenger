@@ -1,7 +1,6 @@
 from django.db import models
 from authapp.models import User
-from django.dispatch import receiver
-from django.db.models.signals import post_save
+from utils.events import EventManager
 
 
 class Chat(models.Model):
@@ -10,6 +9,12 @@ class Chat(models.Model):
     name = models.CharField(max_length=50, default="Chat")  # TODO: о умолчанию имя создателя
     image = models.ImageField(default="https://sun1-47.userapi.com/s/v1/if1/f-xqnN-x7i5-U-Kq3VRTt2h7m6dJT6K-XVVq0py6Yg9WOB2fhACUc3U3gOLbsbodwfzSwHbi.jpg?size=400x0&quality=96&crop=5,0,236,236&ava=1")
     created_at = models.DateTimeField(auto_now_add=True)
+
+    events = EventManager([
+        'on_message',
+        'on_user_join',
+        'on_user_leave'
+    ])
 
     def fetch_member(self, user: User) -> 'ChatMember':
         return ChatMember.objects.get(user=user, chat=self)
@@ -24,18 +29,6 @@ class ChatMember(models.Model):
     chat_custom_name = models.CharField(max_length=100, blank=True, null=True)
     member_since = models.DateTimeField(auto_now_add=True)
     is_admin = models.BooleanField(default=False)
-
-    @receiver(post_save, sender=Chat)
-    def create_user_profile(sender, instance, created, **kwargs):
-        if created:
-            ChatMember.objects.create(user=instance.owner, chat=instance, is_admin=True)
-
-    @receiver(post_save, sender='mainapp.ChatInvite')
-    def on_invite_accepted(sender, instance: 'ChatInvite', created, **kwargs):
-        if not created:
-            if instance.accepted:
-                ChatMember.objects.create(user=instance.target, chat=instance.chat)
-                instance.delete()
 
 
 class Message(models.Model):

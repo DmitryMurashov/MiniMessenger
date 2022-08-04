@@ -69,7 +69,3 @@ class Profile(models.Model):
     def full_name(self) -> str:
         return f'{self.first_name} {self.last_name}'
 
-    @receiver(post_save, sender=User)
-    def create_user_profile(sender, instance, created, **kwargs):
-        if created:
-            Profile.objects.create(user=instance)

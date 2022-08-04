@@ -132,3 +132,9 @@ REST_FRAMEWORK = {
         'authapp.backends.JWTAuthentication',
     ),
 }
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
