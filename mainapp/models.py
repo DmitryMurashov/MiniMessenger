@@ -10,14 +10,20 @@ class Chat(models.Model):
     image = models.ImageField(default="https://sun1-47.userapi.com/s/v1/if1/f-xqnN-x7i5-U-Kq3VRTt2h7m6dJT6K-XVVq0py6Yg9WOB2fhACUc3U3gOLbsbodwfzSwHbi.jpg?size=400x0&quality=96&crop=5,0,236,236&ava=1")
     created_at = models.DateTimeField(auto_now_add=True)
 
-    events = EventManager([
-        'on_message',
-        'on_user_join',
-        'on_user_leave'
-    ])
+    def __init__(self, *args, **kwargs):
+        super(Chat, self).__init__(*args, **kwargs)
+        self.events = EventManager([
+            'on_message',
+            'on_user_join',
+            'on_user_leave'
+        ])
 
-    def fetch_member(self, user: User) -> 'ChatMember':
-        return ChatMember.objects.get(user=user, chat=self)
+    def fetch_member(self, user: User, raise_exception: bool = True) -> 'ChatMember':
+        try:
+            return ChatMember.objects.get(user=user, chat=self)
+        except ChatMember.DoesNotExist as NotFound:
+            if raise_exception:
+                raise NotFound
 
     def is_member(self, user: User) -> bool:
         return ChatMember.objects.filter(user=user, chat=self).exists()

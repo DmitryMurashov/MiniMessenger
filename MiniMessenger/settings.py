@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'authapp',
     'mainapp',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -70,6 +71,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'MiniMessenger.wsgi.application'
+ASGI_APPLICATION = 'MiniMessenger.asgi.application'
 
 
 # Database

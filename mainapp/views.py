@@ -1,6 +1,4 @@
-import time
-
-from rest_framework.views import APIView, Response, status
+from rest_framework.views import APIView, status
 from rest_framework.permissions import IsAuthenticated
 from mainapp.mixins import *
 from mainapp.permissions import *
@@ -14,7 +12,6 @@ from rest_framework.generics import (
     RetrieveAPIView,
     DestroyAPIView
 )
-from django.http import StreamingHttpResponse
 
 
 class ChatListApiView(CreateAPIView, ListAPIView, APIView):
@@ -32,7 +29,7 @@ class ChatListApiView(CreateAPIView, ListAPIView, APIView):
 
 
 class ChatApiView(ChatMixin, UpdateAPIView, RetrieveAPIView, DestroyAPIView, APIView):
-    permission_classes = (IsAuthenticated, DeleteIfChatOwner, IsPrivateChat)
+    permission_classes = (IsAuthenticated, IsAdmin, IsPublicChat)
     get_serializer = ChatSerializer
 
     def get_object(self):
