@@ -1,10 +1,10 @@
-from rest_framework.views import APIView, status
+from rest_framework.views import APIView, status, Response
 from rest_framework.permissions import IsAuthenticated
 from mainapp.mixins import *
 from mainapp.permissions import *
 from mainapp.serializers import *
 from authapp.models import User
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, PermissionDenied
 from rest_framework.generics import (
     CreateAPIView,
     UpdateAPIView,
@@ -97,9 +97,16 @@ class ChatInviteListApiView(ChatRequestMemberMixin, CreateAPIView, ListAPIView, 
         super(ChatInviteListApiView, self).perform_create(serializer)
 
 
-class ChatInviteApiView(InviteMixin, UpdateAPIView, RetrieveAPIView, DestroyAPIView, APIView):
-    permission_classes = (IsAuthenticated, IsMember, IsAdmin)
+class ChatInviteApiView(InviteMixin, RetrieveAPIView, DestroyAPIView, APIView):
+    permission_classes = (IsAuthenticated, MethodIsPost | IsMember, MethodIsPost | IsAdmin)
     serializer_class = ChatInviteSerializer
 
     def get_object(self):
         return self.invite
+
+    def post(self, request, **kwargs):
+        if self.invite.target == request.user:
+            self.invite.accepted = True
+            self.invite.save()
+            return Response({}, status.HTTP_200_OK)
+        raise PermissionDenied()

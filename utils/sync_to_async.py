@@ -23,3 +23,7 @@ def sync_to_async_exists(model: Type[models.Model], **kwargs) -> bool:
 def sync_to_async_serialize(instance: models.Model, serializer: Type[Serializer]) -> dict:
     return serializer(instance=instance).data
 
+
+@database_sync_to_async
+def sync_to_async_get_related(instance: models.Model, attr: str) -> dict:
+    return getattr(instance, attr)

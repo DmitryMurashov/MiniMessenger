@@ -5,15 +5,25 @@ from mainapp.models import Chat, Message, ChatMember
 from authapp.models import User
 from typing import Dict, Any
 from djangochannelsrestframework.permissions import BasePermission as WSBasePermission
+from djangochannelsrestframework.permissions import IsAuthenticated as WSIsAuthenticated
 from channels.consumer import AsyncConsumer
 
-from utils.sync_to_async import sync_to_async_get, sync_to_async_filter
+from utils.sync_to_async import sync_to_async_get
 
 
 class ReadOnly(BasePermission):
     @staticmethod
     def check_permission(request) -> bool:
         return request.method in SAFE_METHODS
+
+    def has_permission(self, request: Request, view: View) -> bool:
+        return self.check_permission(request)
+
+
+class MethodIsPost(BasePermission):
+    @staticmethod
+    def check_permission(request) -> bool:
+        return request.method == "POST"
 
     def has_permission(self, request: Request, view: View) -> bool:
         return self.check_permission(request)
@@ -77,7 +87,9 @@ class IsPublicChat(BasePermission):
         return self.check_permission(chat, request.user)
 
 
-class WSIsMember(WSBasePermission):
+class WSConnectIfMember(WSBasePermission):
+    message = "Для осуществления запроса пользователь должен быть участником чата"
+
     async def can_connect(self, scope: Dict[str, Any], consumer: AsyncConsumer, message=None) -> bool:
         chat_id = scope['url_route']['kwargs']['chat_id']
         chat = await sync_to_async_get(Chat, id=chat_id)
@@ -86,3 +98,16 @@ class WSIsMember(WSBasePermission):
             return True
         except ChatMember.DoesNotExist:
             return False
+
+    async def has_permission(self, scope: Dict[str, Any], consumer: AsyncConsumer, action: str, **kwargs) -> bool:
+        return True
+
+
+class WSConnectIfAuthenticated(WSIsAuthenticated):
+    message = "Для осуществления запроса пользователь должен быть авторизированным"
+
+    async def can_connect(self, scope: Dict[str, Any], consumer: AsyncConsumer, message=None) -> bool:
+        return await super(WSConnectIfAuthenticated, self).has_permission(scope, consumer, "")
+
+    async def has_permission(self, scope: Dict[str, Any], consumer: AsyncConsumer, action: str, **kwargs) -> bool:
+        return True

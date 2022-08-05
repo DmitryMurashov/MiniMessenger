@@ -6,8 +6,8 @@ from rest_framework.exceptions import NotFound
 FAIL_TEXT_COLOR = '\033[91m'
 
 
-def __DoesNotExistsErrorHandler(_, context):
-    return exception_handler(NotFound("Object not found"), context)
+def __DoesNotExistsErrorHandler(error, context):
+    return exception_handler(NotFound(f"Object not found: {error}"), context)
 
 
 def core_exception_handler(exception, context):

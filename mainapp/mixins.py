@@ -18,6 +18,7 @@ class MessageMixin(ChatMixin):
         self.message = None
 
     def get_mixin_object(self, request: Request, *args, **kwargs) -> None:
+        super(MessageMixin, self).get_mixin_object(request, *args, **kwargs)
         self.message = Message.objects.get(id=kwargs.get("message_id"), chat=self.chat)
 
 
@@ -37,6 +38,7 @@ class InviteMixin(ChatMixin):
         self.invite = None
 
     def get_mixin_object(self, request: Request, *args, **kwargs) -> None:
+        super(InviteMixin, self).get_mixin_object(request, *args, **kwargs)
         self.invite = ChatInvite.objects.get(id=kwargs.get("invite_id"), chat=self.chat)
 
 
