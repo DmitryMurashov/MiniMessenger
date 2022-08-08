@@ -71,6 +71,11 @@ class ChatMemberApiView(ChatMemberMixin, UpdateAPIView, RetrieveAPIView, Destroy
     permission_classes = (IsAuthenticated, IsMember, IsAdmin | ReadOnly)
     serializer_class = ChatMemberSerializer
 
+    def delete(self, request, *args, **kwargs):
+        if self.chat.owner == self.member.user:
+            raise APIException('Пользователь является владельцем чата и не может его покинуть', status.HTTP_400_BAD_REQUEST)
+        return super(ChatMemberApiView, self).delete(request, *args, **kwargs)
+
     def get_object(self):
         return self.member
 
@@ -108,5 +113,5 @@ class ChatInviteApiView(InviteMixin, RetrieveAPIView, DestroyAPIView, APIView):
         if self.invite.target == request.user:
             self.invite.accepted = True
             self.invite.save()
-            return Response({}, status.HTTP_200_OK)
+            return Response(status=status.HTTP_204_NO_CONTENT)
         raise PermissionDenied()

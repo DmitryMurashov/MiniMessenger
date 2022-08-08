@@ -2,6 +2,7 @@ from django.http import HttpRequest
 from rest_framework.views import Response, Request
 from rest_framework.views import APIView, status
 from django.core.exceptions import ObjectDoesNotExist
+from builtins import NotImplementedError
 
 
 class ObjectMixin(APIView):
@@ -13,11 +14,8 @@ class ObjectMixin(APIView):
         self.headers = None
         self.response = None
 
-    class NotImplementedError(Exception):
-        pass
-
     def get_mixin_object(self, request: Request, *args, **kwargs) -> None:
-        raise self.NotImplementedError("Object must have this method implemented")
+        raise NotImplementedError()
 
     def dispatch(self, request: HttpRequest, *args, **kwargs):
         self.args = args

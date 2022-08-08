@@ -22,7 +22,7 @@ def core_exception_handler(exception, context):
 
 def __handle_generic_error(exception, context):
     handlers = {
-        'DoesNotExist': __DoesNotExistsErrorHandler,
+        'DoesNotExist': __DoesNotExistsErrorHandler
     }
     exception_class_name = exception.__class__.__name__
     if exception_class_name in handlers:
